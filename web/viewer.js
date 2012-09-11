@@ -1226,6 +1226,8 @@ var PageView = function pageView(container, pdfPage, id, scale,
   this.renderingState = RenderingStates.INITIAL;
   this.resume = null;
 
+  this.textContent = null;
+
   var anchor = document.createElement('a');
   anchor.name = '' + this.id;
 
@@ -1480,6 +1482,22 @@ var PageView = function pageView(container, pdfPage, id, scale,
 
     var self = this;
     function pageViewDrawCallback(error) {
+      var visiblePages = PDFView.getVisiblePages();
+      var pageView = PDFView.getHighestPriority(visiblePages, PDFView.pages,
+                                             PDFView.pageViewScroll.down);
+
+      if (pageView === self) {
+        if (!self.textContent) {
+          self.textContent = {};
+          self.pdfPage.getTextContent().then(
+            function textContentResolved(textContent) {
+              self.textContent = textContent;
+              textLayer.setTextContent(textContent);
+            }
+          );
+        }
+      }
+
       self.renderingState = RenderingStates.FINISHED;
 
       if (self.loadingIconDiv) {
@@ -1897,10 +1915,16 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
     textDiv.style.fontSize = fontHeight + 'px';
     textDiv.style.left = text.geom.x + 'px';
     textDiv.style.top = (text.geom.y - fontHeight) + 'px';
-    textDiv.textContent = PDFJS.bidi(text, -1);
-    textDiv.dir = text.direction;
+
+    // The `text.direction` is added inside the PDFJS.bidi function.
+    // textDiv.textContent = PDFJS.bidi(text, -1);
+    // textDiv.dir = text.direction;
     textDiv.dataset.textLength = text.length;
     this.textDivs.push(textDiv);
+  };
+
+  this.setTextContent = function textLayerBuilderSetTextContent(textContent) {
+    // When calling this function, we assume rendering the textDivs has finished
   };
 };
 
