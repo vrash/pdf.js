@@ -222,6 +222,26 @@ var PDFSearchBar = {
     function() {
       PDFSearchBar.toggle();
     });
+
+    document.getElementById('searchPrevious').addEventListener('click', 
+    function() {
+
+    });
+
+    document.getElementById('searchNext').addEventListener('click', 
+    function() {
+
+    });
+
+    document.getElementById('searchHighlightAll').addEventListener('click', 
+    function() {
+
+    });
+    
+    document.getElementById('searchMatchCase').addEventListener('click', 
+    function() {
+
+    });
   },
 
   open: function() {

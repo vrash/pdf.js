@@ -107,9 +107,12 @@ limitations under the License.
       <div id="mainContainer">
         <div class="searchbar hidden" id="searchbar">
           Find: <input> 
-          <button>&lt;</button><button>&gt;</button>
-          <input type="checkbox" name="highlightALl">Highlight all
-          <input type="checkbox">Match case
+          <button id="searchPrevious">&lt;</button>
+          <button id="searchNext">&gt;</button>
+          <input type="checkbox" id="searchHighlightAll">
+          <label for="searchHighlightAll">Highlight all</label>
+          <input type="checkbox" id="searchMatchCase">
+          <label for="searchMatchCase">Match case</label>
         </div>
         <div class="toolbar">
           <div id="toolbarContainer">
