@@ -488,10 +488,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
     getTextContent: function partialEvaluatorGetIRQueue(stream, resources, state) {
       if (!state) {
-        state = {
-          text: '',
-          mapping: []
-        };
+        state = [];
       }
 
       var self = this;
@@ -522,9 +519,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       var res = resources;
       var args = [], obj;
 
-      var text = state.text;
       var chunk = '';
-      var commandOffset = state.mapping;
       var font = null;
       while (!isEOF(obj = parser.getObj())) {
         if (isCmd(obj)) {
@@ -588,20 +583,16 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
               // Add some spacing between the text here and the text of the
               // xForm.
-              text = text + ' ';
 
-              state.text = text;
               state = this.getTextContent(
                 xobj,
                 xobj.dict.get('Resources') || resources,
                 state
               );
-              text = state.text;
               break;
           } // switch
           if (chunk !== '') {
-            commandOffset.push(text.length);
-            text += fontCharsToUnicode(chunk, font.translated.properties);
+            state.push(fontCharsToUnicode(chunk, font.translated.properties));
             chunk = '';
           }
 
@@ -612,10 +603,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         }
       }
 
-      return {
-        text: text,
-        mapping: commandOffset
-      };
+      return state;
     },
 
     extractDataStructures: function
