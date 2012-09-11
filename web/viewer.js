@@ -1841,7 +1841,9 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
     this.textLayerQueue = [];
   };
 
-  this.endLayout = function textLayerBuilderEndLayout() {
+  this.endLayout = function textLayerBuilderEndLayout() { },
+
+  this.alignDivs = function() {
     var self = this;
     var textDivs = this.textDivs;
     var textLayerDiv = this.textLayerDiv;
@@ -1925,6 +1927,14 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
 
   this.setTextContent = function textLayerBuilderSetTextContent(textContent) {
     // When calling this function, we assume rendering the textDivs has finished
+
+    var textDivs = this.textDivs;
+
+    for (var i = 0; i < textContent.length; i++) {
+      textDivs[i].textContent = textContent[i];
+    }
+
+    this.alignDivs();
   };
 };
 
