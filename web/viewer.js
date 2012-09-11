@@ -208,6 +208,47 @@ var Settings = (function SettingsClosure() {
 var cache = new Cache(kCacheSize);
 var currentPageNumber = 1;
 
+var PDFSearchBar = {
+  opened: false,
+
+  searchButton: null,
+  searchBar: null,
+
+  initialize: function() {
+    this.searchButton = document.getElementById('viewSearch');
+    this.searchBar = document.getElementById('searchbar'); 
+
+    this.searchButton.addEventListener('click',
+    function() {
+      PDFSearchBar.toggle();
+    });
+  },
+
+  open: function() {
+    if (this.opened) return;
+
+    this.opened = true;
+    this.searchButton.classList.add('toggled');
+    this.searchBar.classList.remove('hidden');
+  },
+
+  close: function() {
+    if (!this.opened) return;
+
+    this.opened = false;
+    this.searchButton.classList.remove('toggled');
+    this.searchBar.classList.add('hidden');
+  },
+
+  toggle: function() {
+    if (this.opened) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+};
+
 var PDFView = {
   pages: [],
   thumbnails: [],
@@ -239,6 +280,8 @@ var PDFView = {
     this.thumbnailViewScroll = {};
     this.watchScroll(thumbnailContainer, this.thumbnailViewScroll,
                      this.renderHighestPriority.bind(this));
+
+    PDFSearchBar.initialize();
 
     this.initialized = true;
   },
@@ -988,13 +1031,11 @@ var PDFView = {
 
     var thumbsButton = document.getElementById('viewThumbnail');
     var outlineButton = document.getElementById('viewOutline');
-    var searchButton = document.getElementById('viewSearch');
 
     switch (view) {
       case 'thumbs':
         thumbsButton.classList.add('toggled');
         outlineButton.classList.remove('toggled');
-        searchButton.classList.remove('toggled');
         thumbsView.classList.remove('hidden');
         outlineView.classList.add('hidden');
         searchView.classList.add('hidden');
@@ -1005,7 +1046,6 @@ var PDFView = {
       case 'outline':
         thumbsButton.classList.remove('toggled');
         outlineButton.classList.add('toggled');
-        searchButton.classList.remove('toggled');
         thumbsView.classList.add('hidden');
         outlineView.classList.remove('hidden');
         searchView.classList.add('hidden');
@@ -1017,7 +1057,6 @@ var PDFView = {
       case 'search':
         thumbsButton.classList.remove('toggled');
         outlineButton.classList.remove('toggled');
-        searchButton.classList.add('toggled');
         thumbsView.classList.add('hidden');
         outlineView.classList.add('hidden');
         searchView.classList.remove('hidden');
@@ -2015,11 +2054,6 @@ document.addEventListener('DOMContentLoaded', function webViewerLoad(evt) {
   document.getElementById('viewOutline').addEventListener('click',
     function() {
       PDFView.switchSidebarView('outline');
-    });
-
-  document.getElementById('viewSearch').addEventListener('click',
-    function() {
-      PDFView.switchSidebarView('search');
     });
 
   document.getElementById('searchButton').addEventListener('click',

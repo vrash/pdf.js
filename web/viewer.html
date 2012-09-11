@@ -88,9 +88,6 @@ limitations under the License.
           <button id="viewOutline" class="toolbarButton group" title="Show Document Outline" tabindex="2" data-l10n-id="outline">
              <span data-l10n-id="outline_label">Document Outline</span>
           </button>
-          <button id="viewSearch" class="toolbarButton group hidden" title="Search Document" tabindex="3" data-l10n-id="search_panel">
-             <span data-l10n-id="search_panel_label">Search Document</span>
-          </button>
         </div>
         <div id="sidebarContent">
           <div id="thumbnailView">
@@ -108,13 +105,21 @@ limitations under the License.
       </div>  <!-- sidebarContainer -->
 
       <div id="mainContainer">
+        <div class="searchbar hidden" id="searchbar">
+          Find: <input> 
+          <button>&lt;</button><button>&gt;</button>
+          <input type="checkbox" name="highlightALl">Highlight all
+          <input type="checkbox">Match case
+        </div>
         <div class="toolbar">
           <div id="toolbarContainer">
-
             <div id="toolbarViewer">
               <div id="toolbarViewerLeft">
                 <button id="sidebarToggle" class="toolbarButton" title="Toggle Sidebar" tabindex="4" data-l10n-id="toggle_slider">
                   <span data-l10n-id="toggle_slider_label">Toggle Sidebar</span>
+                </button>
+                <button id="viewSearch" class="toolbarButton group" title="Search Document" tabindex="3" data-l10n-id="search_panel">
+                   <span data-l10n-id="search_panel_label">Search Document</span>
                 </button>
                 <div class="toolbarButtonSpacer"></div>
                 <div class="splitToolbarButton">
