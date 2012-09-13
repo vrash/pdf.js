@@ -486,7 +486,10 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       return queue;
     },
 
-    getTextContent: function partialEvaluatorGetIRQueue(stream, resources) {
+    getTextContent: function partialEvaluatorGetIRQueue(stream, resources, state) {
+      if (!state) {
+        state = [];
+      }
 
       var self = this;
       var xref = this.xref;
@@ -509,18 +512,20 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       }
 
       resources = xref.fetchIfRef(resources) || new Dict();
+      // The xobj is parsed iff it's needed, e.g. if there is a `DO` cmd.
+      var xobjs = null;
 
       var parser = new Parser(new Lexer(stream), false);
       var res = resources;
       var args = [], obj;
 
-      var text = '';
       var chunk = '';
       var font = null;
       while (!isEOF(obj = parser.getObj())) {
         if (isCmd(obj)) {
           var cmd = obj.cmd;
           switch (cmd) {
+            // TODO: Add support for SAVE/RESTORE and XFORM here.
             case 'Tf':
               font = handleSetFont(args[0].name);
               break;
@@ -533,6 +538,14 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
                   // making all negative offsets a space - better to have
                   // a space in incorrect place than not have them at all
                   chunk += ' ';
+                // This is a better way to detect spacing in the future.
+                // However, for now let's keep it simple (also, font.spacedWidth)
+                // is not available.
+                // } else if (items[j] < 0 && font.spacedWidth > 0) {
+                //  var numFakeSpaces = Math.round(-e / font.spacedWidth);
+                //  if (numFakeSpaces > 0) {
+                //    chunk += ' ';
+                //  }
                 }
               }
               break;
@@ -545,9 +558,46 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             case '"':
               chunk += args[2] + ' ';
               break;
+            case 'Do':
+              // Set the chunk such that the following if won't add something
+              // to the state.
+              chunk = '';
+
+              if (args[0].code) {
+                break;
+              }
+
+              if (!xobjs) {
+                xobjs = resources.get('XObject') || new Dict();
+              }
+
+              var name = args[0].name;
+              var xobj = xobjs.get(name);
+              if (!xobj)
+                break;
+              assertWellFormed(isStream(xobj), 'XObject should be a stream');
+
+              var type = xobj.dict.get('Subtype');
+              assertWellFormed(
+                isName(type),
+                'XObject should have a Name subtype'
+              );
+
+              if ('Form' !== type.name)
+                break;
+
+              // Add some spacing between the text here and the text of the
+              // xForm.
+
+              state = this.getTextContent(
+                xobj,
+                xobj.dict.get('Resources') || resources,
+                state
+              );
+              break;
           } // switch
           if (chunk !== '') {
-            text += fontCharsToUnicode(chunk, font.translated.properties);
+            state.push(fontCharsToUnicode(chunk, font.translated.properties));
             chunk = '';
           }
 
@@ -558,7 +608,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         }
       }
 
-      return text;
+      return state;
     },
 
     extractDataStructures: function
