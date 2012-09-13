@@ -217,7 +217,7 @@ var PDFFindBar = {
 
   initialize: function() {
     this.bar = document.getElementById('findbar');
-    this.toggleButton = document.getElementById('viewSearch');
+    this.toggleButton = document.getElementById('openFind');
     this.findField = document.getElementById('findInput');
     this.highlightAll = document.getElementById('findHighlightAll');
     this.caseSensitive = document.getElementById('findMatchCase');
@@ -329,8 +329,6 @@ var PDFView = {
   currentScale: kUnknownScale,
   currentScaleValue: null,
   initialBookmark: document.location.hash.substring(1),
-  startedTextExtraction: false,
-  pageText: [],
   container: null,
   thumbnailContainer: null,
   initialized: false,
@@ -830,8 +828,6 @@ var PDFView = {
     this.pageRotation = 0;
 
     var pages = this.pages = [];
-    this.pageText = [];
-    this.startedTextExtraction = false;
     var pagesRefMap = {};
     var thumbnails = this.thumbnails = [];
     var pagePromises = [];
@@ -994,72 +990,6 @@ var PDFView = {
     return true;
   },
 
-  search: function pdfViewStartSearch() {
-    // Limit this function to run every <SEARCH_TIMEOUT>ms.
-    var SEARCH_TIMEOUT = 250;
-    var lastSearch = this.lastSearch;
-    var now = Date.now();
-    if (lastSearch && (now - lastSearch) < SEARCH_TIMEOUT) {
-      if (!this.searchTimer) {
-        this.searchTimer = setTimeout(function resumeSearch() {
-            PDFView.search();
-          },
-          SEARCH_TIMEOUT - (now - lastSearch)
-        );
-      }
-      return;
-    }
-    this.searchTimer = null;
-    this.lastSearch = now;
-
-    function bindLink(link, pageNumber) {
-      link.href = '#' + pageNumber;
-      link.onclick = function searchBindLink() {
-        PDFView.page = pageNumber;
-        return false;
-      };
-    }
-
-    var searchResults = document.getElementById('searchResults');
-
-    var searchTermsInput = document.getElementById('searchTermsInput');
-    searchResults.removeAttribute('hidden');
-    searchResults.textContent = '';
-
-    var terms = searchTermsInput.value;
-
-    if (!terms)
-      return;
-
-    // simple search: removing spaces and hyphens, then scanning every
-    terms = terms.replace(/\s-/g, '').toLowerCase();
-    var index = PDFView.pageText;
-    var pageFound = false;
-    for (var i = 0, ii = index.length; i < ii; i++) {
-      var pageText = index[i].replace(/\s-/g, '').toLowerCase();
-      var j = pageText.indexOf(terms);
-      if (j < 0)
-        continue;
-
-      var pageNumber = i + 1;
-      var textSample = index[i].substr(j, 50);
-      var link = document.createElement('a');
-      bindLink(link, pageNumber);
-      link.textContent = 'Page ' + pageNumber + ': ' + textSample;
-      searchResults.appendChild(link);
-
-      pageFound = true;
-    }
-    if (!pageFound) {
-      searchResults.textContent = '';
-      var noResults = document.createElement('div');
-      noResults.classList.add('noResults');
-      noResults.textContent = mozL10n.get('search_terms_not_found', null,
-                                              '(Not found)');
-      searchResults.appendChild(noResults);
-    }
-  },
-
   setHash: function pdfViewSetHash(hash) {
     if (!hash)
       return;
@@ -1127,38 +1057,7 @@ var PDFView = {
         if (outlineButton.getAttribute('disabled'))
           return;
         break;
-
-      case 'search':
-        thumbsButton.classList.remove('toggled');
-        outlineButton.classList.remove('toggled');
-        thumbsView.classList.add('hidden');
-        outlineView.classList.add('hidden');
-        searchView.classList.remove('hidden');
-
-        var searchTermsInput = document.getElementById('searchTermsInput');
-        searchTermsInput.focus();
-        // Start text extraction as soon as the search gets displayed.
-        this.extractText();
-        break;
     }
-  },
-
-  extractText: function() {
-    if (this.startedTextExtraction)
-      return;
-    this.startedTextExtraction = true;
-    var self = this;
-    function extractPageText(pageIndex) {
-      self.pages[pageIndex].pdfPage.getTextContent().then(
-        function textContentResolved(textContent) {
-          self.pageText[pageIndex] = textContent.join('');
-          self.search();
-          if ((pageIndex + 1) < self.pages.length)
-            extractPageText(pageIndex + 1);
-        }
-      );
-    }
-    extractPageText(0);
   },
 
   getVisiblePages: function pdfViewGetVisiblePages() {
@@ -2166,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', function webViewerLoad(evt) {
       PDFView.switchSidebarView('outline');
     });
 
-  document.getElementById('searchButton').addEventListener('click',
+  document.getElementById('openFind').addEventListener('click',
     function() {
       PDFView.search();
     });
@@ -2209,13 +2108,6 @@ document.addEventListener('DOMContentLoaded', function webViewerLoad(evt) {
   document.getElementById('download').addEventListener('click',
     function() {
       PDFView.download();
-    });
-
-  document.getElementById('searchTermsInput').addEventListener('keydown',
-    function() {
-      if (event.keyCode == 13) {
-        PDFView.search();
-      }
     });
 
   document.getElementById('pageNumber').addEventListener('change',
