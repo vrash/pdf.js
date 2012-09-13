@@ -209,6 +209,19 @@ var cache = new Cache(kCacheSize);
 var currentPageNumber = 1;
 
 var PDFFindController = {
+
+  matchPageIdx: -1,
+  matchOffset: -1,
+
+  startedTextExtraction: false,
+
+  // Stores the text for each page.
+  pageContents: [],
+
+  pageMatches: [],
+
+  findTimeout: null,
+
   initialize: function() {
     var events = [
       'find',
@@ -224,12 +237,77 @@ var PDFFindController = {
     }
   },
 
+  calcFindMatch: function(pageContent) {
+    // TODO: Handle the other search options here as well.
+
+    var query = this.state.query;
+    var pageContentLower = pageContent.toLowerCase();
+
+    var matches = [];
+
+    var matchIdx = -query;
+    while (true) {
+      matchIdx = pageContentLower.indexOf(query, matchIdx + termsLen);
+      if (matchIdx === -1) {
+        break;
+      }
+
+      matches.push(matchIdx);
+    }
+    return matches;
+  },
+
+  extractText: function() {
+    if (this.startedTextExtraction)
+      return;
+    this.startedTextExtraction = true;
+    var self = this;
+    function extractPageText(pageIndex) {
+      PDFView.pages[pageIndex].getTextContent().then(
+        function textContentResolved(data) {
+          // Store the pageContent as a string.
+          self.pageContents.push(data.join(''));
+          // Ensure there is a empty array of matches. 
+          self.pageMatches.push([]);
+
+          if ((pageIndex + 1) < self.pages.length)
+            extractPageText(pageIndex + 1);
+        }
+      )
+    }
+    extractPageText(0);
+  },
+
   handelEvent: function(e) {
-    debugger;
+    this.state = e.details;
+
+    // Only trigger the find action after 250ms of silence.
+    clearTimeout(this.findTimeout);
+    this.findTimeout = setTimeout(this.performFind.bind(this), 250);
+  },
+
+  performFind: function() {
+    // Recalculate all the matches.
+    // TODO: Make this way more lasily (aka. efficient).
+    // TODO: Make one match show up as the current match
+
+    var pages = PDFView.pages;
+    var pageContents = this.pageContents;
+    var pageMatches = this.pageMachtes;
+
+    for (var i = 0; i < pageContents.length; i++) {
+      pageMatches[i] = this.calcFindMatch(pageContents[i]);
+      if (pages[i].textLayer) {
+        pages[i].textLayer.updateMatches();
+      }
+    }
   }
 }
 
 var PDFFindBar = {
+  // TODO: Enable the FindBar *AFTER* the pagesPromise in the load function
+  // got resolved
+
   opened: false,
 
   FIND_FOUND: 0,    // Successful find
@@ -869,6 +947,9 @@ var PDFView = {
         thumbnails.push(thumbnailView);
         var pageRef = page.ref;
         pagesRefMap[pageRef.num + ' ' + pageRef.gen + ' R'] = i;
+
+        // Trigger text extraction. TODO: Make this happen lasyliy if needed.
+        PDFFindController.extractText();
       }
 
       self.pagesRefMap = pagesRefMap;
@@ -1261,6 +1342,7 @@ var PageView = function pageView(container, pdfPage, id, scale,
   this.resume = null;
 
   this.textContent = null;
+  this.textLayer = null;
 
   var anchor = document.createElement('a');
   anchor.name = '' + this.id;
@@ -1507,7 +1589,8 @@ var PageView = function pageView(container, pdfPage, id, scale,
       textLayerDiv.className = 'textLayer';
       div.appendChild(textLayerDiv);
     }
-    var textLayer = textLayerDiv ? new TextLayerBuilder(textLayerDiv) : null;
+    var textLayer = this.textLayer = 
+          textLayerDiv ? new TextLayerBuilder(textLayerDiv, this.id - 1) : null;
 
     var scale = this.scale, viewport = this.viewport;
     canvas.width = viewport.width;
@@ -1873,12 +1956,15 @@ var CustomStyle = (function CustomStyleClosure() {
   return CustomStyle;
 })();
 
-var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
+var TextLayerBuilder = function textLayerBuilder(textLayerDiv, pageIdx) {
   this.textLayerDiv = textLayerDiv;
+  this.pageIdx = pageIdx;
+  this.matches = [];
 
   this.beginLayout = function textLayerBuilderBeginLayout() {
     this.textDivs = [];
     this.textLayerQueue = [];
+    this.renderingDone = false;
   };
 
   this.endLayout = function textLayerBuilderEndLayout() { },
@@ -1888,22 +1974,27 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
     var textDivs = this.textDivs;
     var textLayerDiv = this.textLayerDiv;
     var renderTimer = null;
-    var renderingDone = false;
     var renderInterval = 0;
     var resumeInterval = 500; // in ms
 
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d');
 
+    var renderDivIdx = 0;
+
     // Render the text layer, one div at a time
     function renderTextLayer() {
-      if (textDivs.length === 0) {
+      if (textDivs.length === renderDivIdx) {
         clearInterval(renderTimer);
-        renderingDone = true;
+        this.renderingDone = true;
         self.textLayerDiv = textLayerDiv = canvas = ctx = null;
+
+        this.updateMatches();
         return;
       }
-      var textDiv = textDivs.shift();
+      var textDiv = textDivs[renderDivIdx];
+      renderDivIdx ++;
+
       if (textDiv.dataset.textLength > 0) {
         textLayerDiv.appendChild(textDiv);
 
@@ -1927,7 +2018,7 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
     // of no scroll events
     var scrollTimer = null;
     function textLayerOnScroll() {
-      if (renderingDone) {
+      if (this.renderingDone) {
         window.removeEventListener('scroll', textLayerOnScroll, false);
         return;
       }
@@ -1966,6 +2057,7 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
 
   this.setTextContent = function textLayerBuilderSetTextContent(textContent) {
     // When calling this function, we assume rendering the textDivs has finished
+    this.textContent = textContent;
     var textDivs = this.textDivs;
 
     for (var i = 0; i < textContent.length; i++) {
@@ -1977,6 +2069,90 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv) {
     }
 
     this.alignDivs();
+  };
+
+  this.convertMatches = function textLayerHighlight(matches) {
+    var i = 0;
+    var iIndex = 0;
+    var textContent = this.textContent;
+    var end = textContent.length - 1;
+
+    var ret = [];
+
+    // Loop over all the matches.
+    for (var m = 0; m < matches.lenght; m++) {
+      var matchIdx = matches[m];
+      // Loop over the divs.
+      while (i !== end && matchIdx >= (iIndex += textContent[i].lenght)) {
+        i++;
+        if (i == mapping.length) {
+          console.error("Could not find matching mapping");
+        }
+      }
+      ret.push({
+        divIdx: i,
+        offset: matchIdx - iIndex
+      });
+    }
+
+    return ret;
+  };
+
+  this.highlightMatch = function textLayerHighlightMatch(match) {
+    var self = this;
+    var hlIdx = this.highlightedIdx;
+    var textDivs = this.textDivs;
+
+    // div.scrollIntoView();
+    // document.querySelector('div#viewerContainer').scrollTop -= 30;
+
+    var text = div.textContent;
+    var offset = self.highlightedOffset;
+    var endIdx = offset + PDFView.searchTerms.length;
+
+    var pre = text.substring(0, offset);
+    var high = text.substring(offset, endIdx);
+    var post = text.substring(endIdx);
+
+    var preDom = document.createTextNode(pre);
+    var highDom = document.createElement('span');
+    var postDom = document.createTextNode(post);
+
+    highDom.textContent = high;
+    highDom.className = 'highlight';
+
+    // XXX Better do proper removal?
+    div.innerHTML = '';
+    div.appendChild(preDom);
+    div.appendChild(highDom);
+    div.appendChild(postDom);
+  },
+
+  this.updateMatches = function textLayerUpdateMatches() {
+    // Only show matches, once all rendering is done.
+    if (!this.renderingDone) 
+      return;
+
+    // Clear out all matches.
+    var matches = this.matches;
+    var textDivs = this.textDivs;
+    var textContent = this.textContent;
+
+    for (var i = 0; i < matches.length; i++) {
+      var divIdx = matches[i].divIdx;
+      textDivs[divIdx].textContent = textDivs[divIdx].textContent;
+    }
+
+    // Convert the matches on the page controller into the match format used
+    // for the textLayer.
+    this.matches = matches = 
+      this.convertMatches(PDFFindController.pageMatches[this.pageIdx]);
+
+    // TODO: Make highlighting over two divs possible
+    // TODO: Make highlighting inside of the same div possible
+    for (var i = 0; i < matches.length; i++) {
+      this.highlightMatch(matches[i]);
+    }
   };
 };
 
