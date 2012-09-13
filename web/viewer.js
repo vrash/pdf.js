@@ -208,7 +208,7 @@ var Settings = (function SettingsClosure() {
 var cache = new Cache(kCacheSize);
 var currentPageNumber = 1;
 
-var PDFSearchBar = {
+var PDFFindBar = {
   opened: false,
 
   bar: null,
@@ -321,7 +321,7 @@ var PDFView = {
     this.watchScroll(thumbnailContainer, this.thumbnailViewScroll,
                      this.renderHighestPriority.bind(this));
 
-    PDFSearchBar.initialize();
+    PDFFindBar.initialize();
 
     this.initialized = true;
   },
