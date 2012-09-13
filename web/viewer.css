@@ -121,7 +121,7 @@ html[dir='rtl'] .innerCenter {
   -o-transition-timing-function: ease;
   transition-duration: 200ms;
   transition-timing-function: ease;
-  
+
 }
 html[dir='ltr'] #sidebarContainer {
   -webkit-transition-property: left;
@@ -285,6 +285,10 @@ html[dir='rtl'] #sidebarContent {
   -webkit-user-select:none;
   -moz-user-select:none;
   cursor: default;
+}
+
+.notFound {
+  background-color: rgb(255, 137, 153);
 }
 
 html[dir='ltr'] #toolbarViewerLeft {
@@ -651,7 +655,7 @@ html[dir='rtl'] .toolbarButton:first-child {
   display: inline-block;
   content: url(images/toolbarButton-sidebarToggle.png);
 }
-    
+
 html[dir='ltr'] .toolbarButton.pageUp::before {
   display: inline-block;
   content: url(images/toolbarButton-pageUp.png);
@@ -661,7 +665,7 @@ html[dir='rtl'] .toolbarButton.pageUp::before {
   display: inline-block;
   content: url(images/toolbarButton-pageUp-rtl.png);
 }
-    
+
 html[dir='ltr'] .toolbarButton.pageDown::before {
   display: inline-block;
   content: url(images/toolbarButton-pageDown.png);
@@ -676,7 +680,7 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
   display: inline-block;
   content: url(images/toolbarButton-zoomOut.png);
 }
-    
+
 .toolbarButton.zoomIn::before {
   display: inline-block;
   content: url(images/toolbarButton-zoomIn.png);
@@ -713,12 +717,12 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
 .toolbarButton.bookmark::before {
   content: url(images/toolbarButton-bookmark.png);
 }
-    
+
 #viewThumbnail.toolbarButton::before {
   display: inline-block;
   content: url(images/toolbarButton-viewThumbnail.png);
 }
-    
+
 #viewOutline.toolbarButton::before {
   display: inline-block;
   content: url(images/toolbarButton-viewOutline.png);
@@ -819,7 +823,7 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
   padding: 7px;
   -moz-transition-duration: 150ms;
 }
-    
+
 a:focus > .thumbnail > .thumbnailSelectionRing > .thumbnailImage,
 .thumbnail:hover > .thumbnailSelectionRing > .thumbnailImage {
   opacity: .9;
@@ -1038,7 +1042,7 @@ canvas {
   background: -moz-linear-gradient(top, #b2b2b2 0%,#898989 100%);
   background: -ms-linear-gradient(top, #b2b2b2 0%,#898989 100%);
   background: -o-linear-gradient(top, #b2b2b2 0%,#898989 100%);
-  background: linear-gradient(top, #b2b2b2 0%,#898989 100%);    
+  background: linear-gradient(top, #b2b2b2 0%,#898989 100%);
 
   border-top-left-radius: 2px;
   border-bottom-left-radius: 2px;
@@ -1224,7 +1228,7 @@ canvas {
 
 @page {
   margin: 0;
-} 
+}
 
 #printContainer {
   display: none;
