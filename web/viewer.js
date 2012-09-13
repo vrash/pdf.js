@@ -1460,6 +1460,13 @@ var PageView = function pageView(container, pdfPage, id, scale,
       }, 0);
   };
 
+  this.getTextContent = function pageviewGetTextContent() {
+    if (!this.textContent) {
+      this.textContent = this.pdfPage.getTextContent();
+    }
+    return this.textContent;
+  },
+
   this.draw = function pageviewDraw(callback) {
     if (this.renderingState !== RenderingStates.INITIAL)
       error('Must be in new state before drawing');
@@ -1498,16 +1505,15 @@ var PageView = function pageView(container, pdfPage, id, scale,
       var pageView = PDFView.getHighestPriority(visiblePages, PDFView.pages,
                                              PDFView.pageViewScroll.down);
 
+      // TODO: Need to ensure the textLayer.setTextContent function is called
+      // eventually. This isn't the case right now, if the following if-statement
+      // is false.
       if (pageView === self) {
-        if (!self.textContent) {
-          self.textContent = {};
-          self.pdfPage.getTextContent().then(
-            function textContentResolved(textContent) {
-              self.textContent = textContent;
-              textLayer.setTextContent(textContent);
-            }
-          );
-        }
+        self.getTextContent().then(
+          function textContentResolved(textContent) {
+            textLayer.setTextContent(textContent);
+          }
+        );
       }
 
       self.renderingState = RenderingStates.FINISHED;
