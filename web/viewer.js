@@ -220,6 +220,11 @@ var PDFFindController = {
 
   pageMatches: [],
 
+  selected: {
+    pageIdx: 0,
+    matchIdx: 0
+  },
+
   findTimeout: null,
 
   initialize: function() {
@@ -2107,10 +2112,14 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv, pageIdx) {
     return ret;
   };
 
-  this.highlightMatch = function textLayerHighlightMatch(match) {
+  this.highlightMatch = function textLayerHighlightMatch(matchIdx) {
+    var match = this.matches[matchIdx];
     var self = this;
     var hlIdx = this.highlightedIdx;
     var textDivs = this.textDivs;
+    var selected = PDFFindController.selected;
+    var isSelected = selected.pageIdx === this.pageIdx && 
+                      matchIdx === selected.matchIdx;
 
     // div.scrollIntoView();
     // document.querySelector('div#viewerContainer').scrollTop -= 30;
@@ -2129,7 +2138,7 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv, pageIdx) {
     var postDom = document.createTextNode(post);
 
     highDom.textContent = high;
-    highDom.className = 'highlight';
+    highDom.className = isSelected ? 'highlight selected' : 'highlight';
 
     // XXX Better do proper removal?
     div.innerHTML = '';
@@ -2161,7 +2170,7 @@ var TextLayerBuilder = function textLayerBuilder(textLayerDiv, pageIdx) {
     // TODO: Make highlighting over two divs possible
     // TODO: Make highlighting inside of the same div possible
     for (var i = 0; i < matches.length; i++) {
-      this.highlightMatch(matches[i]);
+      this.highlightMatch(i);
     }
   };
 };
